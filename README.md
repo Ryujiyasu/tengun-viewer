@@ -6,6 +6,9 @@
 工区ごとに「データ一式＋ビューア」をフォルダで固めて渡すと、
 受け取った側はブラウザで開くだけで見られる。
 
+**デモ: <https://ryujiyasu.github.io/tengun-viewer/>**
+（合成サンプルデータ。トップページで、そのPCで動くかを判定できる）
+
 ## できること
 
 - 点群の表示（平面図・3D・断面）。**初期表示は平面図**
@@ -123,6 +126,8 @@ dist/工事番号/
 npm test         # core の単体試験（較差の解析解との一致など）
 npm run verify   # 実機の Chrome で 20 項目（ビルド済みのサンプルが要る）
 npm run verify:import   # 取り込み機能 9 項目（CLI との判定値一致を含む）
+node tools/verify-site.mjs site-build   # 公開用トップページ 8 項目
+node tools/verify-live.mjs              # 公開URLで実際に動くか 9 項目
 ```
 
 `verify` は PC にインストール済みの Chrome / Edge を使う。
