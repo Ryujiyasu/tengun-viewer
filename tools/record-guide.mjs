@@ -137,9 +137,28 @@ client.on('Page.screencastFrame', async ({ data, sessionId, metadata }) => {
 await client.send('Page.startScreencast', { format: 'jpeg', quality: 88, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
 
 const captures = [];
+/**
+ * 静止画は字幕・手順チップ・カーソルを隠して撮る。
+ * 説明書に貼ると、動画用のテロップが本文と二重になって読みにくいため。
+ * 録画の側には字幕を残す（一瞬だけ隠して撮り、すぐ戻す）。
+ */
 async function capture(name, title) {
   const file = `capture/${name}.png`;
+  await page.evaluate(() => {
+    for (const id of ['gd-cap', 'gd-step', 'gd-ring', 'gd-cur']) {
+      const el = document.getElementById(id);
+      if (el) { el.dataset.gdPrev = el.style.visibility || ''; el.style.visibility = 'hidden'; }
+    }
+  });
+  await sleep(120);
   await page.screenshot({ path: join(outDir, file) });
+  await page.evaluate(() => {
+    for (const id of ['gd-cap', 'gd-step', 'gd-ring', 'gd-cur']) {
+      const el = document.getElementById(id);
+      if (el) el.style.visibility = el.dataset.gdPrev ?? '';
+    }
+  });
+  await sleep(120);
   captures.push({ name, title, file });
   console.log(`  capture: ${name}`);
 }

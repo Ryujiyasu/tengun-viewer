@@ -11,3 +11,4 @@ packages/viewer/src/generated/
 # 検証で落としてくる実測データ（再取得可能・容量が大きい）
 fixtures/test-autzen.laz
 site-build/
+送付用/
