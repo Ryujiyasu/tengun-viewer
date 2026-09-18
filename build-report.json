@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-18T03:51:56.746Z",
+  "builtAt": "2026-09-18T05:01:35.145Z",
   "machine": {
     "node": "v24.10.0",
     "platform": "darwin",
@@ -12,16 +12,16 @@
     "triangles": 2760
   },
   "timingsMs": {
-    "design": 34,
-    "read-post": 137,
-    "deviation": 824,
-    "parts": 157,
-    "read-pre": 91,
-    "sections": 133,
-    "full": 1217,
-    "light": 1137
+    "design": 36,
+    "read-post": 144,
+    "deviation": 903,
+    "parts": 173,
+    "read-pre": 95,
+    "sections": 138,
+    "full": 1262,
+    "light": 1142
   },
-  "peakRssMB": 620,
+  "peakRssMB": 618,
   "outputs": [
     {
       "file": "full/data/post.bin",
@@ -53,7 +53,7 @@
     },
     {
       "file": "light/index.html",
-      "bytes": 26241915
+      "bytes": 26262031
     }
   ]
 }

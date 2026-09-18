@@ -1,6 +1,6 @@
 {
   "format": "tengun-manifest/1",
-  "createdAt": "2026-09-18T03:51:56.745Z",
+  "createdAt": "2026-09-18T05:01:35.145Z",
   "generator": "tengun ptv 0.1.0",
   "claim": {
     "title": "【サンプル】市道○○線 道路改良工事（切土のり面）",
@@ -68,14 +68,14 @@
       "pointCount": 1200000,
       "evaluatedPointCount": 1194319,
       "timings": {
-        "design": 34,
-        "read-post": 137,
-        "deviation": 824,
-        "parts": 157,
-        "read-pre": 91,
-        "sections": 133,
-        "full": 1217,
-        "light": 1137
+        "design": 36,
+        "read-post": 144,
+        "deviation": 903,
+        "parts": 173,
+        "read-pre": 95,
+        "sections": 138,
+        "full": 1262,
+        "light": 1142
       }
     },
     "tengun.outputs": [
@@ -100,13 +100,13 @@
       {
         "file": "full/report/出来形合否判定総括表.csv",
         "bytes": 1674,
-        "sha256": "f1ab506350abfd918a229de7546b7bfe31b5dccea4d613e746f6263274b0b986",
+        "sha256": "2a7e6f1a978066a72afe6c28f311e7fcd692ee2c2dc8f64086d83e259ae6ec27",
         "role": "report"
       },
       {
         "file": "full/report/report.csv",
         "bytes": 2091,
-        "sha256": "7d2be1c22d4cf790c2fea6505eb5e81ae70cdb9eb40d9832a4c198a2a3990b15",
+        "sha256": "8791255bbe70d906062e275779e394357482780585b6a63a037a8828302adae3",
         "role": "report"
       },
       {
@@ -123,8 +123,8 @@
       },
       {
         "file": "light/index.html",
-        "bytes": 26241915,
-        "sha256": "b1b3b5792e9aa1decc9c72c7ccae0abdd37166349146cf3c16f892a421a96e15",
+        "bytes": 26262031,
+        "sha256": "b4c3087f09676deb9210f74b801427d004fd068cda48d305b2cf650e01b01187",
         "role": "light-viewer"
       }
     ]
