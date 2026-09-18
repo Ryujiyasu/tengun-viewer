@@ -1,0 +1,57 @@
+[
+  {
+    "name": "01-起動時の動作確認",
+    "title": "起動時の動作確認",
+    "file": "capture/01-起動時の動作確認.png"
+  },
+  {
+    "name": "02-画面全体",
+    "title": "画面全体",
+    "file": "capture/02-画面全体.png"
+  },
+  {
+    "name": "03-較差カラーマップ",
+    "title": "較差のカラーマップ",
+    "file": "capture/03-較差カラーマップ.png"
+  },
+  {
+    "name": "04-拡大",
+    "title": "拡大したところ",
+    "file": "capture/04-拡大.png"
+  },
+  {
+    "name": "05-色域を狭める",
+    "title": "色の範囲を狭めたところ",
+    "file": "capture/05-色域を狭める.png"
+  },
+  {
+    "name": "06-規格値判定",
+    "title": "規格値判定（様式-31-2）",
+    "file": "capture/06-規格値判定.png"
+  },
+  {
+    "name": "07-3D表示",
+    "title": "3D 表示",
+    "file": "capture/07-3D表示.png"
+  },
+  {
+    "name": "08-断面図",
+    "title": "断面図",
+    "file": "capture/08-断面図.png"
+  },
+  {
+    "name": "09-断面図（引き直し）",
+    "title": "測線を引き直したところ",
+    "file": "capture/09-断面図（引き直し）.png"
+  },
+  {
+    "name": "10-帳票",
+    "title": "帳票の出力",
+    "file": "capture/10-帳票.png"
+  },
+  {
+    "name": "11-データを開く",
+    "title": "データの取り込み画面",
+    "file": "capture/11-データを開く.png"
+  }
+]

@@ -10,6 +10,7 @@ import { createServer } from 'node:http';
 import { readFile, stat, writeFile, mkdir } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import puppeteer from 'puppeteer';
+import { grabCanvasRgb, contentStats } from './lib/pixels.mjs';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -94,29 +95,27 @@ async function openPage(url, { shot, label, disableGl = false }) {
     });
   }
   await page.goto(url, { waitUntil: 'load', timeout: 60000 });
-  await new Promise((r) => setTimeout(r, 6000));
+  await new Promise((r) => setTimeout(r, 2500));
+  // 起動時の動作確認ダイアログ。内容を控えてから閉じる。
+  const env = await page.evaluate(() => {
+    const m = document.querySelector('.modal.show');
+    if (!m) return null;
+    return {
+      mark: m.querySelector('.env-mark')?.textContent ?? '',
+      title: m.querySelector('.env-head h2')?.textContent ?? '',
+      rows: m.querySelectorAll('.env-kv dt').length,
+    };
+  });
+  await page.evaluate(() => document.querySelector('.modal.show .btn.primary')?.click());
+  await new Promise((r) => setTimeout(r, 4500));
   const info = await page.evaluate(() => {
     const status = document.getElementById('status')?.textContent ?? '';
     const badge = document.querySelector('.badge')?.textContent ?? '';
     const title = document.querySelector('.project-name')?.textContent ?? '';
     const bootErr = document.querySelector('.boot-error h1')?.textContent ?? '';
     const canvas = document.querySelector('.canvas-host canvas');
-    let drawn = 0, nonBg = 0;
-    if (canvas) {
-      // 実際に何か描かれたか、WebGL のピクセルを読んで確認する
-      try {
-        const c2 = document.createElement('canvas');
-        c2.width = canvas.width; c2.height = canvas.height;
-        const ctx = c2.getContext('2d');
-        ctx.drawImage(canvas, 0, 0);
-        const d = ctx.getImageData(0, 0, c2.width, c2.height).data;
-        for (let i = 0; i < d.length; i += 4 * 97) {
-          drawn++;
-          const r = d[i], g = d[i + 1], b = d[i + 2];
-          if (Math.abs(r - 242) > 6 || Math.abs(g - 244) > 6 || Math.abs(b - 246) > 6) nonBg++;
-        }
-      } catch (e) { /* ignore */ }
-    }
+    // 【注意】ここで canvas を drawImage して読むと、WebGL は preserveDrawingBuffer が
+    // 無いので空の画像が返る。描画の確認は Node 側でスクリーンショットから行う。
     // 警告バナーがキャンバスを覆い隠していないかを幾何的に見る。
     // 「キャンバスに点が描かれている」だけでは、上に不透明な箱が乗っていても合格してしまう。
     let coverRatio = 0;
@@ -133,16 +132,21 @@ async function openPage(url, { shot, label, disableGl = false }) {
 
     return {
       status, badge, title, bootErr, coverRatio, scalebarShown, northShown,
+      controlsHint: document.getElementById('controls-hint')?.textContent ?? '',
+      hasOpenDataBtn: !!document.getElementById('open-data-btn'),
+      brandLogo: !!document.querySelector('.brand-logo svg'),
       hasCanvas: !!canvas,
       canvasSize: canvas ? [canvas.width, canvas.height] : null,
-      sampled: drawn, nonBackground: nonBg,
+
       panels: [...document.querySelectorAll('.panel-head')].map((p) => p.textContent),
       judgeRows: document.querySelectorAll('.judge-table tbody tr').length,
       histSvg: !!document.querySelector('.hist-host svg rect'),
     };
   });
   if (shot) await page.screenshot({ path: join(shotDir, shot), fullPage: false });
-  return { page, info, errors, logs };
+  // 合成後の画面から実測する
+  const px = contentStats(await grabCanvasRgb(page, { w: 220, h: 140 }));
+  return { page, info: { ...info, px, env }, errors, logs };
 }
 
 // ---- 1. full 版を HTTP で ----
@@ -153,30 +157,27 @@ console.log(`\n== フル版 (HTTP, Range 対応) http://127.0.0.1:${port}/ ==`);
   const { page, info, errors } = await openPage(`http://127.0.0.1:${port}/`, { shot: 'full-plan.png' });
   record('フル版が起動する', !info.bootErr, info.bootErr || info.title);
   record('キャンバスに点が描画されている',
-    info.nonBackground > info.sampled * 0.02,
-    `背景以外のピクセル ${info.nonBackground}/${info.sampled}`);
+    info.px.nonBgRatio > 0.05 && info.px.distinctColors > 12,
+    `背景以外 ${(info.px.nonBgRatio * 100).toFixed(1)}% / 色数 ${info.px.distinctColors}`);
   record('判定パネルが出ている', info.judgeRows >= 1, `${info.judgeRows} 行 / ${info.badge}`);
   record('ヒストグラムが描かれている', info.histSvg);
   record('平面図にスケールバーが出ている', info.scalebarShown);
   record('平面図に方位記号が出ている', info.northShown);
+  record('起動時に動作確認が出る', !!info.env && /[○△×]/.test(info.env.mark),
+    info.env ? `${info.env.mark} ${info.env.title} / 詳細 ${info.env.rows} 項目` : '(出なかった)');
+  record('操作方法が画面に出ている', /ドラッグ/.test(info.controlsHint), info.controlsHint.slice(0, 40));
+  record('「データを開く」ボタンがある', info.hasOpenDataBtn);
+  record('ロゴが表示されている', info.brandLogo);
   record('JS エラーがない', errors.length === 0, errors.slice(0, 3).join(' | '));
   console.log(`   ステータス: ${info.status.trim()}`);
 
   // 3D に切り替え
   await page.click('.tab[data-view="3d"]');
   await new Promise((r) => setTimeout(r, 4000));
-  const three = await page.evaluate(() => {
-    const canvas = document.querySelector('.canvas-host canvas');
-    const c2 = document.createElement('canvas');
-    c2.width = canvas.width; c2.height = canvas.height;
-    c2.getContext('2d').drawImage(canvas, 0, 0);
-    const d = c2.getContext('2d').getImageData(0, 0, c2.width, c2.height).data;
-    let n = 0, t = 0;
-    for (let i = 0; i < d.length; i += 4 * 97) { t++; if (Math.abs(d[i] - 242) > 6 || Math.abs(d[i + 1] - 244) > 6) n++; }
-    return { n, t };
-  });
+  const three = contentStats(await grabCanvasRgb(page, { w: 220, h: 140 }));
   await page.screenshot({ path: join(shotDir, 'full-3d.png') });
-  record('3D 表示に切り替わる', three.n > three.t * 0.02, `背景以外 ${three.n}/${three.t}`);
+  record('3D 表示に切り替わる', three.nonBgRatio > 0.03 && three.distinctColors > 12,
+    `背景以外 ${(three.nonBgRatio * 100).toFixed(1)}% / 色数 ${three.distinctColors}`);
 
   // 断面
   await page.click('.tab[data-view="section"]');
@@ -202,8 +203,8 @@ console.log('\n== WebGL2 無効時 ==');
   const { page, info, errors } = await openPage(`http://127.0.0.1:${port}/`, { shot: 'no-webgl2.png', disableGl: true });
   record('日本語のエラーメッセージが出る', /WebGL2|ブラウザ/.test(info.bootErr), info.bootErr);
   record('2D モードに落ちて点が描かれる',
-    info.nonBackground > info.sampled * 0.01,
-    `背景以外 ${info.nonBackground}/${info.sampled}`);
+    info.px.nonBgRatio > 0.03 && info.px.distinctColors > 10,
+    `背景以外 ${(info.px.nonBgRatio * 100).toFixed(1)}% / 色数 ${info.px.distinctColors}`);
   record('警告が点群を覆い隠していない', info.coverRatio < 0.5,
     `キャンバスの ${(info.coverRatio * 100).toFixed(0)}% を占有`);
   record('2D モードでもスケールバーが出る', info.scalebarShown);
@@ -219,7 +220,8 @@ console.log('\n== 軽量版 (file://) ==');
   const lightFile = resolve(outBase, 'light', 'index.html');
   const { page, info, errors } = await openPage(`file://${lightFile}`, { shot: 'light-file.png' });
   record('file:// で起動する', !info.bootErr, info.bootErr || info.title);
-  record('点が描画されている', info.nonBackground > info.sampled * 0.02, `背景以外 ${info.nonBackground}/${info.sampled}`);
+  record('点が描画されている', info.px.nonBgRatio > 0.05 && info.px.distinctColors > 12,
+    `背景以外 ${(info.px.nonBgRatio * 100).toFixed(1)}% / 色数 ${info.px.distinctColors}`);
   record('判定が出ている', info.judgeRows >= 1, info.badge);
   record('JS エラーがない', errors.length === 0, errors.slice(0, 3).join(' | '));
   console.log(`   ステータス: ${info.status.trim()}`);

@@ -1,0 +1,21 @@
+import { createServer } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { join, extname, resolve } from 'node:path';
+import puppeteer from 'puppeteer';
+const root=resolve('site-build');
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.bin':'application/octet-stream','.csv':'text/csv','.svg':'image/svg+xml'};
+const server=createServer(async(q,p)=>{try{const u=decodeURIComponent(q.url.split('?')[0]);const f=join(root,u.endsWith('/')?u+'index.html':u);const st=await stat(f);const b=await readFile(f);const t=MIME[extname(f)]??'application/octet-stream';const r=q.headers.range;
+if(r){const m=/bytes=(\d+)-(\d*)/.exec(r);const s0=+m[1],e0=m[2]?+m[2]:st.size-1;p.writeHead(206,{'Content-Type':t,'Content-Range':`bytes ${s0}-${e0}/${st.size}`,'Accept-Ranges':'bytes'});p.end(b.subarray(s0,e0+1));}
+else{p.writeHead(200,{'Content-Type':t,'Accept-Ranges':'bytes'});p.end(b);}}catch{p.writeHead(404);p.end();}});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const base=`http://127.0.0.1:${server.address().port}/`;
+const br=await puppeteer.launch({headless:'new',executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',args:['--no-sandbox']});
+const pg=await br.newPage(); await pg.setViewport({width:1280,height:860});
+await pg.goto(base,{waitUntil:'load',timeout:120000}); await new Promise(r=>setTimeout(r,1500));
+await pg.screenshot({path:process.argv[2]+'/top.png'});
+await pg.goto(base+'full/',{waitUntil:'load',timeout:180000});
+await pg.waitForFunction(()=>/読み込み済み [1-9]/.test(document.getElementById('status')?.textContent??''),{timeout:180000});
+await new Promise(r=>setTimeout(r,8000));
+await pg.screenshot({path:process.argv[2]+'/viewer.png'});
+await pg.screenshot({path:process.argv[2]+'/header.png', clip:{x:0,y:0,width:1280,height:64}});
+await br.close(); server.close();

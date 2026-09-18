@@ -1,13 +1,20 @@
 # 点群ビューア
 
+<img src="brand/hatsuki-logo.svg" alt="葉月工業株式会社" height="30">
+
 土木工事の出来形点群を、**発注者が特別なソフトを入れずにブラウザだけで開いて**、
 設計との差分と規格値判定まで確認できる形にして渡すための道具。
+葉月工業株式会社（<https://hatsuki.co.jp/>）。
 
 工区ごとに「データ一式＋ビューア」をフォルダで固めて渡すと、
 受け取った側はブラウザで開くだけで見られる。
 
-**デモ: <https://ryujiyasu.github.io/tengun-viewer/>**
-（合成サンプルデータ。トップページで、そのPCで動くかを判定できる）
+| | |
+|---|---|
+| **デモ** | <https://ryujiyasu.github.io/tengun-viewer/>（合成サンプル。開くと動作確認が出る） |
+| **使い方** | [docs/使い方.md](docs/使い方.md)・[動画](docs/guide/使い方.mp4) |
+| **実測値** | [docs/P0-実測結果.md](docs/P0-実測結果.md) |
+| **要領との対応** | [docs/要領との対応.md](docs/要領との対応.md) |
 
 ## できること
 
@@ -15,10 +22,10 @@
 - 設計 LandXML との較差をカラーマップで表示
 - 出来形合否判定総括表（様式-31-2 準拠）の作成と CSV 出力
 - ブラウザに LAS/LAZ と設計データを放り込んで、その場で計算（CLI 不要）
+- **起動時に、その PC で動くかを判定して表示する**
 - WebGL2 が使えない環境では Canvas 2D に自動で落ちる
 
-実測値は [`docs/P0-実測結果.md`](docs/P0-実測結果.md)。
-要領との対応と未確認事項は [`docs/要領との対応.md`](docs/要領との対応.md)。
+![使い方](docs/guide/使い方-抜粋.gif)
 
 ## 使い方
 
@@ -123,11 +130,11 @@ dist/工事番号/
 ## 試験
 
 ```sh
-npm test         # core の単体試験（較差の解析解との一致など）
-npm run verify   # 実機の Chrome で 20 項目（ビルド済みのサンプルが要る）
+npm test                # core の単体試験 8 項目（較差の解析解との一致など）
+npm run verify          # 実機の Chrome で 24 項目（ビルド済みのサンプルが要る）
 npm run verify:import   # 取り込み機能 9 項目（CLI との判定値一致を含む）
-node tools/verify-site.mjs site-build   # 公開用トップページ 8 項目
-node tools/verify-live.mjs              # 公開URLで実際に動くか 9 項目
+npm run verify:controls # 表示設定が実際に画面へ反映されるか 18 項目
+npm run verify:live     # 公開URLで実際に動くか 9 項目
 ```
 
 `verify` は PC にインストール済みの Chrome / Edge を使う。
@@ -140,9 +147,11 @@ packages/
   core/     差分計算・規格値判定・座標変換・LAS/LandXML。依存ゼロ、環境非依存
   cli/      点群変換とパッケージ生成（ptv）
   viewer/   ブラウザ側アプリ（three.js）
+brand/      ロゴ素材（葉月工業株式会社）
 fixtures/   試験用の小さな点群と LandXML
-docs/       規格値定義と調査結果
-tools/      サンプル生成・検証・実測
+docs/       規格値定義・使い方・調査結果
+site/       （廃止）公開サイトは full 版をそのまま置く
+tools/      サンプル生成・検証・実測・使い方動画の収録
 ```
 
 差分計算と規格値判定は `core` に閉じ込めてあり、CLI とブラウザの両方が同じコードを通る。
@@ -157,6 +166,8 @@ tools/      サンプル生成・検証・実測
 - **較差の符号は設計面より高い側が正。** 画面にも明示する
 - **GPU に渡す前にローカル原点へ平行移動する。** 平面直角座標系の生値を float32 で渡すと描画が壊れる
 - **ビューアは読み取り専用。** 納品データを改変できると検査資料としての信頼性が落ちる
+- **three.js のユニフォームは `uniformsNeedUpdate` を立てて送り直す。** 同じマテリアルを共有する描画では再送されず、表示設定が効かなくなる
+- **描画の確認はページ内の canvas 読み出しでなく、スクリーンショットで行う。** WebGL は `preserveDrawingBuffer` なしだと空の画像が返り、真っ黒な画面を見て試験が通ってしまう
 
 ## 作らないもの
 

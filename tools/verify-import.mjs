@@ -9,6 +9,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, extname, resolve } from 'node:path';
 import puppeteer from 'puppeteer';
+import { grabCanvasRgb, contentStats } from './lib/pixels.mjs';
 
 const MIME = { '.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.bin':'application/octet-stream','.csv':'text/csv','.svg':'image/svg+xml' };
 const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -56,19 +57,20 @@ page.on('pageerror', (e) => errors.push(String(e.message)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
 await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'load', timeout: 120000 });
-await new Promise((r) => setTimeout(r, 4000));
+await new Promise((r) => setTimeout(r, 2500));
+await page.evaluate(() => document.querySelector('.modal.show .btn.primary')?.click());
+await new Promise((r) => setTimeout(r, 3500));
 
-// 「データを開く」パネルを開く
+// ヘッダの「データを開く」から取り込み画面を出す
 const opened = await page.evaluate(() => {
-  const heads = [...document.querySelectorAll('.panel-head')];
-  const h = heads.find((x) => x.textContent.includes('データを開く'));
-  if (!h) return false;
-  if (!h.parentElement.classList.contains('open')) h.click();
-  return true;
+  const b = document.getElementById('open-data-btn');
+  if (!b) return false;
+  b.click();
+  return !!document.querySelector('.imp-screen.show');
 });
-record('「データを開く」パネルがある', opened);
+record('「データを開く」画面が開く', opened);
 
-const input = await page.$('.dropzone input[type=file]');
+const input = await page.$('.imp-drop input[type=file]');
 record('ファイル選択欄がある', !!input);
 if (!input) { await browser.close(); server.close(); process.exit(1); }
 
@@ -78,7 +80,7 @@ await input.uploadFile(...files);
 await new Promise((r) => setTimeout(r, 800));
 
 const slots = await page.evaluate(() =>
-  [...document.querySelectorAll('.slot')].map((s) => s.querySelector('.slot-file')?.textContent));
+  [...document.querySelectorAll('.imp-slot')].map((s) => s.querySelector('.imp-slot-file')?.textContent));
 record('投入したファイルが認識されている', slots.filter((s) => s && s !== '未選択').length >= 2, slots.filter(Boolean).join(' / '));
 
 const btnEnabled = await page.evaluate(() => {
@@ -112,31 +114,23 @@ const after = await page.evaluate(() => {
       part, label: tr.children[0].textContent.trim(), value: tr.children[1].textContent.trim(),
     }));
   });
-  const canvas = document.querySelector('.canvas-host canvas');
-  let nonBg = 0, tot = 0;
-  if (canvas) {
-    const c2 = document.createElement('canvas');
-    c2.width = canvas.width; c2.height = canvas.height;
-    const ctx = c2.getContext('2d');
-    ctx.drawImage(canvas, 0, 0);
-    const d = ctx.getImageData(0, 0, c2.width, c2.height).data;
-    for (let i = 0; i < d.length; i += 4 * 97) { tot++; if (Math.abs(d[i] - 242) > 6 || Math.abs(d[i + 1] - 244) > 6) nonBg++; }
-  }
+  // 描画の確認は Node 側でスクリーンショットから行う（canvas の直接読み出しは空になる）
   return {
     diagnostics: Object.fromEntries(dd),
     rows,
     partRows,
     verdict: document.querySelector('.sheet-verdict')?.textContent ?? document.querySelector('.badge')?.textContent ?? '',
     status: document.querySelector('#status')?.textContent?.trim() ?? '',
-    importMsg: document.querySelector('.import-status')?.textContent ?? '',
-    nonBg, tot,
+    importMsg: document.querySelector('.imp-status')?.textContent ?? '',
   };
 });
 
 // 取り込みが済むと画面ごと作り直されるので、診断情報の「ビューア」欄で判定する
 const viewerLabel = after.diagnostics['ビューア'] ?? '';
 record('取り込みが完了する', /ブラウザ取り込み/.test(viewerLabel), viewerLabel || '(診断情報なし)');
-record('取り込んだ点が描画される', after.nonBg > after.tot * 0.02, `背景以外 ${after.nonBg}/${after.tot}`);
+const px = contentStats(await grabCanvasRgb(page, { w: 220, h: 140 }));
+record('取り込んだ点が描画される', px.nonBgRatio > 0.05 && px.distinctColors > 12,
+  `背景以外 ${(px.nonBgRatio * 100).toFixed(1)}% / 色数 ${px.distinctColors}`);
 record('判定表が出る', after.rows.length >= 1, `${after.rows.length} 行 / ${after.verdict}`);
 record('JS エラーがない', errors.length === 0, errors.slice(0, 3).join(' | '));
 console.log(`   所要 ${(elapsed / 1000).toFixed(1)} 秒`);

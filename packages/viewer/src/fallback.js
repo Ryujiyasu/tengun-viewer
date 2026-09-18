@@ -14,6 +14,7 @@ export class Fallback2D {
     this.points = null;
     this.rangeM = defaults.colorRangeM;
     this.mode = 'deviation';
+    this.groundOnly = false;
     this.pointSize = 2;
     this.view = { cx: 0, cy: 0, scale: 1 };
     this._bindPanZoom();
@@ -107,6 +108,7 @@ export class Fallback2D {
     // 同じ色の点をまとめて描くと速い
     const buckets = new Map();
     for (let i = 0; i < p.count; i++) {
+      if (this.groundOnly && p.cls[i] !== 2 && p.cls[i] !== 11) continue;
       const [sx, sy] = this.toScreen(p.pos[i * 3], p.pos[i * 3 + 1]);
       if (sx < -5 || sy < -5 || sx > w + 5 || sy > h + 5) continue;
       let color;
@@ -144,6 +146,7 @@ export class Fallback2D {
     const ux = dx / len, uy = dy / len;
     const es = [], ns = [], hs = [], ds = [];
     for (let i = 0; i < p.count; i++) {
+      if (this.groundOnly && p.cls[i] !== 2 && p.cls[i] !== 11) continue;
       const re = p.pos[i * 3] - a.x, rn = p.pos[i * 3 + 1] - a.y;
       const t = re * ux + rn * uy;
       if (t < 0 || t > len) continue;

@@ -1,5 +1,6 @@
 /** 画面構成。発注者が最初に見るのは平面図＋較差カラーマップ。 */
 import { deviationCss, DEVIATION_STOPS, rampCss, CLASS_COLORS, CLASS_NAMES } from './colors.js';
+import { BRAND, LOGO_SVG } from './generated/brand.js';
 
 export function h(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
@@ -37,7 +38,24 @@ export function buildLayout(root, config) {
     h('button', { class: 'tab', 'data-view': 'section', text: '断面' }),
   ]);
 
+  const brandBlock = h('a', {
+    class: 'brand', href: BRAND.url, target: '_blank', rel: 'noopener noreferrer',
+    title: `${BRAND.companyName}　${BRAND.productName}`,
+  }, [
+    h('span', { class: 'brand-logo', html: LOGO_SVG }),
+    h('span', { class: 'brand-product', text: BRAND.productName }),
+  ]);
+
+  const openDataBtn = h('button', { class: 'hdr-btn', id: 'open-data-btn' }, [
+    h('span', { class: 'hdr-btn-icon', html:
+      '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">'
+      + '<path d="M8 11V2M8 2L4.5 5.5M8 2l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '<path d="M2 10v3.2h12V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' }),
+    'データを開く',
+  ]);
+
   const header = h('header', { class: 'app-header' }, [
+    brandBlock,
     h('div', { class: 'title-block' }, [
       h('div', { class: 'project-name', text: info.projectName ?? '（工事名未設定）' }),
       h('div', { class: 'project-meta', text: [
@@ -47,11 +65,13 @@ export function buildLayout(root, config) {
         (info.startDate || info.endDate) && `工期 ${info.startDate ?? ''}〜${info.endDate ?? ''}`,
       ].filter(Boolean).join('　/　') }),
     ]),
-    h('div', { class: 'header-right' }, [tabs, badge]),
+    h('div', { class: 'header-right' }, [openDataBtn, tabs, badge]),
   ]);
 
   const canvasHost = h('div', { class: 'canvas-host' }, [
     h('div', { class: 'view-hint', id: 'view-hint' }),
+    // 3D の操作方法は書いてないと分からない。常に出しておく。
+    h('div', { class: 'controls-hint', id: 'controls-hint' }),
     h('div', { class: 'north', id: 'north', html:
       '<svg viewBox="0 0 40 46" width="40" height="46">'
       + '<polygon points="20,6 26,30 20,25 14,30" fill="#1d2733"/>'
@@ -69,10 +89,16 @@ export function buildLayout(root, config) {
     side,
   ]);
 
-  const status = h('footer', { class: 'app-status', id: 'status' });
+  // 文字を入れるのは中の span。footer 自体に textContent を入れると
+  // 中身ごと消えて #status が無くなる。
+  const statusText = h('span', { id: 'status', class: 'status-text' });
+  const status = h('footer', { class: 'app-status' }, [
+    statusText,
+    h('span', { class: 'status-brand', text: `提供 ${BRAND.companyName}` }),
+  ]);
 
   root.appendChild(h('div', { class: 'app-shell' }, [header, main, status]));
-  return { header, tabs, badge, canvasHost, side, bottom, status };
+  return { header, tabs, badge, canvasHost, side, bottom, status, statusText, openDataBtn };
 }
 
 /**
@@ -253,5 +279,17 @@ export function updateScalebar(worldPerPixel) {
   const px = nice / worldPerPixel;
   const label = nice >= 1000 ? `${(nice / 1000).toFixed(nice % 1000 ? 1 : 0)} km` : `${nice >= 1 ? nice : nice.toFixed(2)} m`;
   el.innerHTML = `<div style="text-align:center">${label}</div><div class="scalebar-bar" style="width:${px.toFixed(1)}px"></div>`;
+  el.classList.add('show');
+}
+
+/** 画面ごとの操作方法を出す。3D は書いていないと分からない。 */
+export function setControlsHint(mode) {
+  const el = document.getElementById('controls-hint');
+  if (!el) return;
+  const rows = mode === '3d'
+    ? [['左ドラッグ', '回転'], ['右ドラッグ', '平行移動'], ['ホイール', '拡大・縮小']]
+    : [['ドラッグ', '平行移動'], ['ホイール', '拡大・縮小']];
+  el.innerHTML = rows.map(([k, v]) =>
+    `<span class="ch-row"><b>${k}</b>${v}</span>`).join('');
   el.classList.add('show');
 }

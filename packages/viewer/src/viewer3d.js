@@ -29,6 +29,7 @@ export class Viewer3D {
     this.material = createPointMaterial();
     this.material.uniforms.uDevRange.value.set(-defaults.colorRangeM, defaults.colorRangeM);
     this.material.uniforms.uTolerance.value = defaults.toleranceM;
+    this.material.uniformsNeedUpdate = true;
 
     this.groups = new THREE.Group();
     this.scene.add(this.groups);
@@ -96,14 +97,15 @@ export class Viewer3D {
     this.siteCenter = center.clone();
     this.siteSize = size.clone();
 
-    this.material.uniforms.uElevRange.value.set(box.min.z, box.max.z);
+    this._setUniform((u) => { u.uElevRange.value.set(box.min.z, box.max.z); });
 
     this.ortho.position.set(center.x, center.y, box.max.z + Math.max(size.x, size.y) + 100);
     this.orthoTarget = new THREE.Vector3(center.x, center.y, center.z);
     this.orthoViewSize = Math.max(size.x, size.y) * 1.12;
 
-    const dist = Math.max(size.x, size.y, size.z) * 1.4;
-    this.perspective.position.set(center.x - dist * 0.55, center.y - dist * 0.65, center.z + dist * 0.55);
+    // 3D の初期視点。遠すぎると法面が平らに見えるので、やや寄って低めの角度から見る
+    const dist = Math.max(size.x, size.y, size.z) * 0.85;
+    this.perspective.position.set(center.x - dist * 0.62, center.y - dist * 0.72, center.z + dist * 0.42);
     this.perspectiveTarget = center.clone();
 
     this.setViewMode(this.mode);
@@ -123,21 +125,30 @@ export class Viewer3D {
       this.controls.screenSpacePanning = true;
       this.controls.target.copy(this.orthoTarget);
       this.ortho.position.set(this.orthoTarget.x, this.orthoTarget.y, this.orthoTarget.z + 5000);
-      this.material.uniforms.uAdaptive.value = 0;
+      this._setUniform((u) => { u.uAdaptive.value = 0; });
     } else {
       this.camera = this.perspective;
       this.camera.up.set(0, 0, 1);
       this.controls = new OrbitControls(this.perspective, el);
       this.controls.enableRotate = true;
+      // 地面より下に潜ると何も見えなくなるので、水平より下へは回さない
+      this.controls.maxPolarAngle = Math.PI * 0.495;
       this.controls.target.copy(this.perspectiveTarget);
-      this.material.uniforms.uAdaptive.value = 1;
+      this._setUniform((u) => { u.uAdaptive.value = 1; });
     }
-    // 左=回転 / ホイール=ズーム / 右=平行移動
-    this.controls.mouseButtons = {
-      LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN,
-    };
+    // 3D は 左=回転 / 右=平行移動。
+    // 平面図は回転しないので、左ドラッグも平行移動にする。
+    // 地図と同じ操作感にしないと「左で掴んでも動かない」と戸惑わせる。
+    this.controls.mouseButtons = mode === 'plan'
+      ? { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
+      : { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+    el.classList.toggle('mode-3d', mode !== 'plan');
+    el.classList.toggle('mode-plan', mode === 'plan');
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.12;
+    // 掴んでいる最中が分かるようカーソルを変える
+    this.controls.addEventListener('start', () => el.classList.add('dragging'));
+    this.controls.addEventListener('end', () => el.classList.remove('dragging'));
     this.controls.addEventListener('change', () => { this.needsVisibilityUpdate = true; });
     this.resize();
     this.needsVisibilityUpdate = true;
@@ -155,6 +166,7 @@ export class Viewer3D {
     this.ortho.top = half; this.ortho.bottom = -half;
     this.ortho.updateProjectionMatrix();
     this.material.uniforms.uProjFactor.value = h / (2 * Math.tan((this.perspective.fov * Math.PI) / 360));
+    this.material.uniformsNeedUpdate = true;
     this.needsVisibilityUpdate = true;
   }
 
@@ -218,7 +230,9 @@ export class Viewer3D {
         .then((buf) => {
           const decoded = entry.ds.decode(buf, node);
           node.cpu = decoded;
-          const obj = makeNodeObject(decoded, this.material);
+          // ノードの点間隔 = 根の間隔 / 2^階層
+          const spacing = (entry.ds.hierarchy.spacing ?? 1) / Math.pow(2, node.level);
+          const obj = makeNodeObject(decoded, this.material, spacing);
           entry.group.add(obj);
           entry.objects.set(node.name, obj);
           node.loaded = true;
@@ -272,12 +286,26 @@ export class Viewer3D {
   }
 
   // ---- 操作系 ----
-  setColorMode(m) { this.material.uniforms.uMode.value = m; }
-  setPointSize(v) { this.material.uniforms.uPointSize.value = v; }
-  setRoundPoints(v) { this.material.uniforms.uRound.value = v ? 1 : 0; }
-  setDevRange(m) { this.material.uniforms.uDevRange.value.set(-m, m); }
-  setHighlightOut(v) { this.material.uniforms.uHighlightOut.value = v ? 1 : 0; }
-  setUseAltMeasure(v) { this.material.uniforms.uUseAlt.value = v ? 1 : 0; }
+  /**
+   * ユニフォームを変える。
+   *
+   * 【重要】three.js は同じマテリアルを使い回す描画でユニフォームを再送しない。
+   * uniforms.X.value を書き換えただけでは画面に反映されないので、
+   * 必ず uniformsNeedUpdate を立てること。これを忘れると
+   * 「色分けを変えても何も起きない」状態になる。
+   */
+  _setUniform(fn) {
+    fn(this.material.uniforms);
+    this.material.uniformsNeedUpdate = true;
+  }
+
+  setColorMode(m) { this._setUniform((u) => { u.uMode.value = m; }); }
+  setPointSize(v) { this._setUniform((u) => { u.uPointSize.value = v; }); }
+  setRoundPoints(v) { this._setUniform((u) => { u.uRound.value = v ? 1 : 0; }); }
+  setDevRange(m) { this._setUniform((u) => { u.uDevRange.value.set(-m, m); }); }
+  setHighlightOut(v) { this._setUniform((u) => { u.uHighlightOut.value = v ? 1 : 0; }); }
+  setUseAltMeasure(v) { this._setUniform((u) => { u.uUseAlt.value = v ? 1 : 0; }); }
+  setGroundOnly(v) { this._setUniform((u) => { u.uGroundOnly.value = v ? 1 : 0; }); }
 
   /** 画面座標 → 現場の代表標高面上のローカル座標 */
   screenToWorld(clientX, clientY) {
@@ -309,6 +337,7 @@ export class Viewer3D {
     const ux = dx / len, uy = dy / len;
 
     const useAlt = this.material.uniforms.uUseAlt.value > 0.5;
+    const groundOnly = this.material.uniforms.uGroundOnly.value > 0.5;
     const es = [], ns = [], hs = [], ds = [];
     for (const node of entry.ds.byName.values()) {
       if (!node.loaded || !node.cpu) continue;
@@ -322,7 +351,9 @@ export class Viewer3D {
       const { pos, count } = node.cpu;
       const dev = useAlt ? (node.cpu.devAlt ?? node.cpu.dev) : node.cpu.dev;
       const valid = useAlt ? (node.cpu.validAlt ?? node.cpu.valid) : node.cpu.valid;
+      const cls = node.cpu.cls;
       for (let i = 0; i < count; i++) {
+        if (groundOnly && cls[i] !== 2 && cls[i] !== 11) continue;
         const px = pos[i * 3], py = pos[i * 3 + 1];
         const re = px - a.x, rn = py - a.y;
         const t = re * ux + rn * uy;

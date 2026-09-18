@@ -10,13 +10,16 @@
     "packages/viewer"
   ],
   "scripts": {
-    "build": "node tools/embed-wasm.mjs && npm run build -w @tengun/viewer",
+    "build": "node tools/embed-wasm.mjs && node tools/embed-brand.mjs && npm run build -w @tengun/viewer",
     "test": "node --test packages/core/test/*.test.js",
     "sample": "node tools/make-sample.mjs --out sample --points 2000000",
     "fixtures": "node tools/make-sample.mjs --out fixtures --points 60000 --seed 7",
     "verify": "node tools/verify-viewer.mjs dist/sample docs/screenshots",
     "verify:import": "node tools/verify-import.mjs dist/sample/full sample docs/screenshots sample/出来形.las",
-    "measure": "node tools/measure-performance.mjs dist/sample"
+    "site": "node packages/cli/src/ptv.js build --post sample/出来形.las --pre sample/起工測量.las --design sample/設計.xml --info sample/工事情報.json --out site-build --light-points 500000 && node tools/build-site.mjs site-build",
+    "verify:controls": "node tools/verify-controls.mjs dist/sample/full",
+    "verify:live": "node tools/verify-live.mjs",
+    "guide": "node tools/record-guide.mjs site-build docs/guide"
   },
   "engines": {
     "node": ">=20"

@@ -180,6 +180,7 @@ async function run({ pointsBuffer, preBuffer, designText, infoText, options }) {
       origin,
       site,
       specSource: spec.source ?? null,
+      workTypes: spec.workTypes.map((w) => ({ id: w.id, name: w.name, measure: w.measure ?? null })),
       datasets,
       design: { inline: true, vertexCount: designPayload.vertexCount, triangleCount: designPayload.triangleCount, origin: designPayload.origin },
       reports: Object.keys(inline.reports).map((f) => ({ label: f, inline: f })),

@@ -10,10 +10,12 @@ import { Dataset, loadDesign } from './data.js';
 import { Viewer3D, MODE } from './viewer3d.js';
 import { Fallback2D } from './fallback.js';
 import { deviationCss } from './colors.js';
-import { createImportPanel } from './import/panel.js';
+import { createImportScreen } from './import/screen.js';
+import { createEnvDialog, shouldShowOnStartup } from './startup.js';
+import { BRAND } from './generated/brand.js';
 import {
   h, buildLayout, judgementPanel, histogramPanel, renderHistogram,
-  deviationLegend, classLegend, section, bootError, updateScalebar,
+  deviationLegend, classLegend, section, bootError, updateScalebar, setControlsHint,
 } from './ui.js';
 
 const COLOR_MODES = [
@@ -88,7 +90,7 @@ async function start(config, root) {
     engine.frameAll();
     engine.start();
     engine.onStatus = (s) => {
-      updateStatus(ui.status, s, gl, config);
+      updateStatus(ui.statusText, s, gl, config);
       updateScalebar(engine.worldPerPixel());
       document.getElementById('north')?.classList.toggle('show', engine.mode === 'plan');
     };
@@ -112,7 +114,7 @@ async function start(config, root) {
       } catch (e) { break; }
     }
     engine.setPoints(chunks);
-    updateStatus(ui.status, { loadedPoints: acc, visibleNodes: chunks.length, pending: 0, fps: 0, memory: null }, gl, config);
+    updateStatus(ui.statusText, { loadedPoints: acc, visibleNodes: chunks.length, pending: 0, fps: 0, memory: null }, gl, config);
     const sync2d = () => {
       updateScalebar(1 / engine.view.scale);
       document.getElementById('north')?.classList.add('show');
@@ -147,6 +149,17 @@ async function start(config, root) {
   });
 
   const highlight = h('input', { type: 'checkbox', onchange: (e) => engine.setHighlightOut?.(e.target.checked) });
+  // 既定で地表面のみ表示にする。判定が地表面(分類 2, 11)だけで行われるため、
+  // 画面も同じ範囲を映すのが筋。特に 3D では、除去しきれなかった草木が
+  // 設計面から大きく離れた値になって最大色で描かれ、面全体を覆ってしまう。
+  const groundOnlyBox = h('input', {
+    type: 'checkbox', checked: 'true',
+    onchange: (e) => {
+      if (gl.ok) engine.setGroundOnly(e.target.checked);
+      else { engine.groundOnly = e.target.checked; engine.draw(); }
+      if (state.pickA && state.pickB) drawSection();
+    },
+  });
   const designToggle = h('input', { type: 'checkbox', onchange: (e) => engine.setDesignVisible?.(e.target.checked) });
 
   const datasetSelect = datasets.length > 1
@@ -160,6 +173,7 @@ async function start(config, root) {
     field('色域', h('div', { class: 'slider-row' }, [rangeInput, rangeLabel])),
     field('点サイズ', sizeInput),
     field('点密度', densityInput),
+    checkboxField('地表面のみ表示（外すと草木・ノイズも出ます）', groundOnlyBox),
     checkboxField('規格値内を淡色にする', highlight),
     ...(state.designLocal && gl.ok ? [checkboxField('設計面を重ねる', designToggle)] : []),
     legendHost,
@@ -170,11 +184,44 @@ async function start(config, root) {
   ui.side.appendChild(hist.el);
   ui.side.appendChild(sectionPanel());
   ui.side.appendChild(reportPanel(config));
-  ui.side.appendChild(buildImportPanel());
   ui.side.appendChild(diagnosticsPanel(config, gl));
 
+  // ---- 取り込み画面 ----
+  const importScreen = createImportScreen({
+    workTypes: config.workTypes ?? [],
+    onLoaded: ({ config: newConfig, inline }) => {
+      // 取り込んだデータで画面ごと作り直す。描画は変換済みデータと同じ経路を通る。
+      newConfig.inline = inline;
+      engine.dispose?.();
+      start(newConfig, root).catch((e) => console.error(e));
+    },
+  });
+  root.appendChild(importScreen.el);
+  ui.openDataBtn.addEventListener('click', () => importScreen.open());
+  // 画面のどこにドロップしても取り込み画面が開く
+  for (const ev of ['dragenter', 'dragover']) root.addEventListener(ev, (e) => e.preventDefault());
+  root.addEventListener('drop', (e) => {
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    importScreen.open();
+    importScreen.accept([...e.dataTransfer.files]);
+  });
+
+  // ---- 起動時の動作確認 ----
+  const envDialog = createEnvDialog(gl);
+  root.appendChild(envDialog.el);
+  if (shouldShowOnStartup(envDialog.level)) setTimeout(() => envDialog.open(), 400);
+  state.envDialog = envDialog;
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (importScreen.isOpen()) importScreen.close();
+    else envDialog.close();
+  });
+
   renderHistogram(hist.host, config.histogram, state.rangeM, state.toleranceM);
-  if (gl.ok) engine.setColorMode(MODE.DEVIATION);
+  if (gl.ok) { engine.setColorMode(MODE.DEVIATION); engine.setGroundOnly(true); }
+  else { engine.groundOnly = true; engine.draw?.(); }
 
   // ---- タブ ----
   ui.tabs.addEventListener('click', (e) => {
@@ -207,17 +254,26 @@ async function start(config, root) {
   });
 
   ui.canvasHost.addEventListener('click', (e) => {
+    // 断面タブで測線を引いた後も、平面図をクリックすればそのまま引き直せる。
+    // 「引き直す」を押さないと次が引けないのは分かりにくい。
+    if (state.view === 'section' && !state.picking && state.pickA && state.pickB) {
+      state.picking = true; state.pickA = null; state.pickB = null;
+      setPickingCursor(true);
+      if (gl.ok) engine.drawLineOverlay(null, null); else { engine.line = null; engine.draw(); }
+      updateHint('① 測線の始点をクリック');
+    }
     if (!state.picking) return;
     const p = gl.ok ? engine.screenToWorld(e.clientX, e.clientY) : screenToWorld2D(engine, ui.canvasHost, e);
     if (!p) return;
     if (!state.pickA) {
       state.pickA = p; state.pickB = null;
-      updateHint('測線の終点をクリックしてください');
+      updateHint('② 測線の終点をクリック');
     } else {
       state.pickB = p;
       state.picking = false;
+      setPickingCursor(false);
       drawSection();
-      updateHint();
+      updateHint('平面図をクリックすると、別の測線で引き直せます', 'soft');
     }
     if (gl.ok) engine.drawLineOverlay(state.pickA, state.pickB);
     else { engine.line = state.pickA && state.pickB ? { a: state.pickA, b: state.pickB } : null; engine.draw(); }
@@ -270,18 +326,28 @@ async function start(config, root) {
       state.picking = true; state.pickA = null; state.pickB = null;
       if (gl.ok) { engine.setViewMode('plan'); engine.drawLineOverlay(null, null); }
       bottom.classList.add('show');
-      bottom.innerHTML = '<div class="section-empty">平面図上で 2 点をクリックすると、その測線の縦断図を作ります。</div>';
-      updateHint('測線の始点をクリックしてください');
+      bottom.innerHTML = '<div class="section-empty">'
+        + '<b>平面図の上で 2 点をクリックしてください。</b>'
+        + 'その 2 点を結ぶ線で切った縦断図を作ります。</div>';
+      updateHint('① 測線の始点をクリック');
     } else {
       state.picking = false;
       if (gl.ok) engine.setViewMode(v === '3d' ? '3d' : 'plan');
       bottom.classList.toggle('show', !!(state.pickA && state.pickB));
       updateHint();
     }
+    setControlsHint(v === '3d' ? '3d' : 'plan');
+    setPickingCursor(state.picking);
   }
 
-  function updateHint(msg) {
+  function setPickingCursor(on) {
+    const c = ui.canvasHost.querySelector('canvas');
+    if (c) c.classList.toggle('picking', !!on);
+  }
+
+  function updateHint(msg, tone) {
     const el = document.getElementById('view-hint');
+    el.classList.toggle('soft', tone === 'soft');
     if (msg) { el.textContent = msg; el.classList.add('show'); return; }
     el.classList.remove('show');
     el.textContent = '';
@@ -314,7 +380,12 @@ async function start(config, root) {
     bottom.appendChild(h('div', { class: 'section-head' }, [
       h('span', { text: `延長 ${sec.length.toFixed(2)} m　抽出点数 ${sec.points.length.toLocaleString()}（測線から ±0.5m）` }),
       h('button', { class: 'btn small', text: 'SVG を保存', onclick: () => downloadText('断面図.svg', svg, 'image/svg+xml') }),
-      h('button', { class: 'btn small', text: '引き直す', onclick: () => { state.picking = true; state.pickA = null; state.pickB = null; updateHint('測線の始点をクリックしてください'); } }),
+      h('button', { class: 'btn small primary', text: '測線を引き直す', onclick: () => {
+        state.picking = true; state.pickA = null; state.pickB = null;
+        setPickingCursor(true);
+        if (gl.ok) engine.drawLineOverlay(null, null); else { engine.line = null; engine.draw(); }
+        updateHint('① 測線の始点をクリック');
+      } }),
     ]));
     bottom.appendChild(h('div', { class: 'section-svg', html: svg }));
   }
@@ -336,28 +407,6 @@ async function start(config, root) {
     ]);
   }
 
-  function buildImportPanel() {
-    const panel = createImportPanel({
-      workTypes: config.specSource ? null : null,
-      onLoaded: ({ config: newConfig, inline }) => {
-        // 取り込んだデータで画面ごと作り直す。描画パスは変換済みデータと同じものを通す。
-        newConfig.inline = inline;
-        engine.dispose?.();
-        start(newConfig, root).catch((e) => console.error(e));
-      },
-    });
-    // 画面全体をドロップ先にする（右パネルまでドラッグさせない）
-    for (const ev of ['dragenter', 'dragover']) root.addEventListener(ev, (e) => e.preventDefault());
-    root.addEventListener('drop', (e) => {
-      if (!e.dataTransfer?.files?.length) return;
-      e.preventDefault();
-      panel.el.classList.add('open');
-      panel.el.scrollIntoView({ block: 'nearest' });
-      panel.accept([...e.dataTransfer.files]);
-    });
-    return panel.el;
-  }
-
   function reportPanel(cfg) {
     const items = (cfg.reports ?? []).map((r) => {
       if (r.url) return h('a', { class: 'btn', href: r.url, download: r.label, text: r.label });
@@ -372,6 +421,7 @@ async function start(config, root) {
 
   function diagnosticsPanel(cfg, glInfo) {
     const rows = [
+      ['提供', BRAND.companyName],
       ['ビューア', cfg.generator ?? '—'],
       ['生成日時', cfg.builtAt ? new Date(cfg.builtAt).toLocaleString('ja-JP') : '—'],
       ['配布形態', cfg.mode === 'light' ? '軽量版（単一 HTML / file:// 可）' : 'フル版（Web サーバ配置）'],
@@ -387,6 +437,7 @@ async function start(config, root) {
     if (cfg.specSource?.title) rows.push(['規格値定義', `${cfg.specSource.title}${cfg.specSource.verified ? '' : '（出典未確認）'}`]);
     return section('診断情報', [
       h('dl', { class: 'stat-list' }, rows.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: String(v) })])),
+      h('button', { class: 'btn', text: '動作確認を表示', onclick: () => state.envDialog?.open() }),
       h('button', { class: 'btn', text: '診断情報をコピー', onclick: () => {
         navigator.clipboard?.writeText(rows.map((r) => `${r[0]}: ${r[1]}`).join('\n'));
       } }),

@@ -251,6 +251,8 @@ async function main() {
     origin: null,
     site: siteSummary(postFile.points, info),
     specSource: spec.source ?? null,
+    // 取り込み画面の工種選択に使う
+    workTypes: spec.workTypes.map((w) => ({ id: w.id, name: w.name, measure: w.measure ?? null })),
   };
 
   if (wantFull) {

@@ -145,7 +145,7 @@ export function extractSection(points, tin, line, { halfWidth = 0.5, designStep 
  * 断面図 SVG。そのまま帳票に貼れるよう、単体で完結した SVG を返す。
  */
 export function sectionSvg(section, {
-  width = 900, height = 300, margin = { top: 28, right: 20, bottom: 40, left: 64 },
+  width = 900, height = 300, margin = { top: 28, right: 20, bottom: 40, left: 76 },
   title = '縦断図', vExaggeration = 1, colorScale = null, toleranceM = 0.05,
 } = {}) {
   const pw = width - margin.left - margin.right;
@@ -201,7 +201,7 @@ export function sectionSvg(section, {
   parts.push(`<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="none" stroke="#98a2ad" stroke-width="1"/>`);
   parts.push(`<text x="${margin.left}" y="18" font-size="13" font-weight="bold" fill="#1d2733">${escapeXml(title)}</text>`);
   parts.push(`<text x="${width - margin.right}" y="18" font-size="11" fill="#5a6470" text-anchor="end">測点 L=${section.length.toFixed(1)}m / 点数 ${section.points.length}</text>`);
-  parts.push(`<text x="13" y="${margin.top + ph / 2}" font-size="11" fill="#5a6470" transform="rotate(-90 14 ${margin.top + ph / 2})" text-anchor="middle">標高 (m)</text>`);
+  parts.push(`<text x="17" y="${margin.top + ph / 2}" font-size="11" fill="#5a6470" transform="rotate(-90 17 ${margin.top + ph / 2})" text-anchor="middle">標高 (m)</text>`);
   parts.push(`<text x="${margin.left + pw / 2}" y="${height - 6}" font-size="11" fill="#5a6470" text-anchor="middle">測点距離 (m)</text>`);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="sans-serif">${parts.join('')}</svg>`;
