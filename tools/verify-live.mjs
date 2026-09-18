@@ -52,7 +52,7 @@ record('点群が描画される', px.nonBgRatio > 0.05 && px.distinctColors > 1
   `背景以外 ${(px.nonBgRatio * 100).toFixed(1)}% / 最初の点まで ${firstPoints} s`);
 record('判定表（様式-31-2）が出る', v.parts >= 1, `${v.parts} 部位 / ${v.verdict}`);
 record('ロゴと「データを開く」がある', v.logo && v.openBtn);
-record('JS エラーがない', errors.length === 0, errors.slice(0, 3).join(' | '));
+record('JS エラーがない', errs.length === 0, errs.slice(0, 3).join(' | '));
 console.log(`   ${v.title}`);
 console.log(`   ${v.status}`);
 
