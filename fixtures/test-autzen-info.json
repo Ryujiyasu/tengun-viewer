@@ -1,0 +1,15 @@
+{
+  "$comment": "実測 LAZ (autzen_trim.laz, PDAL テストデータ) を使った取り込み試験用。日本の座標系ではない。",
+  "projectName": "【試験】LAZ 取り込み確認（autzen_trim）",
+  "projectNumber": "TEST-LAZ",
+  "owner": "—",
+  "contractor": "—",
+  "workType": "doro-dokou-rotai",
+  "epsg": 2992,
+  "axisOrder": "EN",
+  "design": {
+    "file": "test-autzen-design.xml",
+    "pointOrder": "NEH"
+  },
+  "note": "PDAL のテストデータ。LAZ 解凍の確認専用で、出来形の検査用ではない。"
+}

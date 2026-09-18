@@ -1,0 +1,11 @@
+{
+  "name": "@tengun/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "点群変換とパッケージ生成のCLI",
+  "bin": { "ptv": "./src/ptv.js" },
+  "dependencies": {
+    "@tengun/core": "0.1.0",
+    "laz-perf": "^0.0.6"
+  }
+}

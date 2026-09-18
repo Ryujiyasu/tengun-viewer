@@ -1,0 +1,31 @@
+{
+  "$comment": "工事情報。座標系は LAS ヘッダに入っていないことが多いので、ここで明示的に指定する（推測しない）。",
+  "projectName": "【サンプル】市道○○線 道路改良工事（切土のり面）",
+  "projectNumber": "SAMPLE-2026-001",
+  "owner": "鹿児島市（サンプル）",
+  "contractor": "葉月工業株式会社（サンプル）",
+  "startDate": "2026-04-01",
+  "endDate": "2026-11-30",
+  "workType": "doro-dokou-rotai",
+  "epsg": 6670,
+  "axisOrder": "EN",
+  "$axisOrderNote": "LAS の X/Y の並び。EN = X が東・Y が北（一般的な LAS）。NE = X が北・Y が東（測量座標をそのまま入れた場合）。",
+  "design": {
+    "file": "設計.xml",
+    "pointOrder": "NEH"
+  },
+  "acquisition": {
+    "post": {
+      "capturedAt": "2026-10-20",
+      "equipment": "（サンプル）UAVレーザ",
+      "software": "（サンプル）",
+      "note": "草木除去等の前処理済み想定"
+    },
+    "pre": {
+      "capturedAt": "2026-04-10",
+      "equipment": "（サンプル）UAV写真測量",
+      "software": "（サンプル）"
+    }
+  },
+  "note": "これは合成サンプルデータです。検査には使用できません。"
+}

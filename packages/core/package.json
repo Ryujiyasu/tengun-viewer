@@ -1,0 +1,9 @@
+{
+  "name": "@tengun/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "差分計算・規格値判定・座標変換・LAS/LandXMLパース（環境非依存）",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js" },
+  "files": ["src"]
+}

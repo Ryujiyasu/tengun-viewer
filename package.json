@@ -1,0 +1,27 @@
+{
+  "name": "tengun",
+  "private": true,
+  "version": "0.1.0",
+  "description": "点群ビューア (Point Cloud Viewer) — 出来形管理・差分確認用の配布型ビューア",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/cli",
+    "packages/viewer"
+  ],
+  "scripts": {
+    "build": "node tools/embed-wasm.mjs && npm run build -w @tengun/viewer",
+    "test": "node --test packages/core/test/*.test.js",
+    "sample": "node tools/make-sample.mjs --out sample --points 2000000",
+    "fixtures": "node tools/make-sample.mjs --out fixtures --points 60000 --seed 7",
+    "verify": "node tools/verify-viewer.mjs dist/sample docs/screenshots",
+    "verify:import": "node tools/verify-import.mjs dist/sample/full sample docs/screenshots sample/出来形.las",
+    "measure": "node tools/measure-performance.mjs dist/sample"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.11.0"
+  }
+}

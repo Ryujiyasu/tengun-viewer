@@ -1,0 +1,18 @@
+{
+  "name": "@tengun/viewer",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "ブラウザ側アプリ",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@tengun/core": "0.1.0",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.6"
+  }
+}

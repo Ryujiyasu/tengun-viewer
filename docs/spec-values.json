@@ -1,0 +1,112 @@
+{
+  "$comment": "出来形管理の規格値定義。要領改定時はこのファイルだけを差し替える。コードに値を書かないこと。",
+  "version": "2026-09-18",
+  "source": {
+    "title": "３次元計測技術を用いた出来形管理要領（案）令和８年３月版",
+    "issuer": "国土交通省",
+    "url": "https://www.mlit.go.jp/tec/constplan/content/001880735.pdf",
+    "form": "様式-31-2 出来形合否判定総括表",
+    "verified": false,
+    "note": "ここに入れた数値は上記要領の『様式-31-2 記載例』（別紙１ 面管理編 図１-２６〜図１-２９）から読み取ったものであり、規格値表そのものではない。要領本文は規格値を『土木工事施工管理基準及び規格値（案）（国土交通省各地方整備局）』に委ねている。検査に使う前に、適用される施工管理基準の最新版から転記し verified を true にすること。鹿児島市の試行要領（令和6年10月1日）は災害復旧・維持補修・降灰除去工事を対象外としている点にも注意。",
+    "pendingChecks": [
+      "『土木工事施工管理基準及び規格値（案）』の当該工種の値を確認する",
+      "鹿児島市／鹿児島県がどの基準を適用するか確認する",
+      "棄却点の判定条件の明文規定を確認する（現状は様式記載例からの推定）",
+      "法面を標高較差で見るか水平較差で見るかを発注者と確認する"
+    ]
+  },
+  "defaults": {
+    "measure": "elevation",
+    "colorRangeM": 0.05,
+    "maxDistanceM": 5.0,
+    "slopeThresholdDeg": 15,
+    "densityMinPerM2": 1.0,
+    "outlierRatioMaxPercent": 0.3
+  },
+  "workTypes": [
+    {
+      "id": "doro-dokou-rotai",
+      "name": "道路土工 路体盛土工",
+      "measure": "elevation",
+      "measureNote": "要領は土工について標高較差または水平較差を定める。法線方向較差は要領外のため判定には使わない。",
+      "toleranceM": 0.05,
+      "source": "要領 別紙１ 面管理編 図１-２６／図１-２８（様式-31-2 記載例）",
+      "parts": [
+        {
+          "id": "crest",
+          "name": "天端",
+          "slope": "flat",
+          "toleranceM": 0.05,
+          "individualToleranceM": 0.15,
+          "criteria": [
+            { "id": "mean", "label": "平均値", "stat": "mean", "unit": "mm", "tolerance": { "min": -50, "max": 50 } },
+            { "id": "max", "label": "最大値(差)", "stat": "max", "unit": "mm", "tolerance": { "max": 150 } },
+            { "id": "min", "label": "最小値(差)", "stat": "min", "unit": "mm", "tolerance": { "min": -150 } },
+            { "id": "density", "label": "データ数", "stat": "density", "unit": "点/m2", "tolerance": { "min": 1 }, "note": "1点/㎡以上" },
+            { "id": "outlier", "label": "棄却点数", "stat": "outlierRatio", "unit": "%", "tolerance": { "max": 0.3 } }
+          ]
+        },
+        {
+          "id": "slope",
+          "name": "法面",
+          "slope": "steep",
+          "toleranceM": 0.08,
+          "individualToleranceM": 0.19,
+          "criteria": [
+            { "id": "mean", "label": "平均値", "stat": "mean", "unit": "mm", "tolerance": { "min": -80, "max": 80 } },
+            { "id": "max", "label": "最大値(差)", "stat": "max", "unit": "mm", "tolerance": { "max": 190 } },
+            { "id": "min", "label": "最小値(差)", "stat": "min", "unit": "mm", "tolerance": { "min": -190 } },
+            { "id": "density", "label": "データ数", "stat": "density", "unit": "点/m2", "tolerance": { "min": 1 }, "note": "1点/㎡以上" },
+            { "id": "outlier", "label": "棄却点数", "stat": "outlierRatio", "unit": "%", "tolerance": { "max": 0.3 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "houso-kasou-roban",
+      "name": "アスファルト舗装工 下層路盤工",
+      "measure": "elevation",
+      "toleranceM": 0.04,
+      "source": "要領 別紙１ 面管理編 図１-２７／図１-２９（様式-31-2 記載例）",
+      "parts": [
+        {
+          "id": "crest",
+          "name": "路盤面",
+          "slope": "flat",
+          "toleranceM": 0.04,
+          "individualToleranceM": 0.09,
+          "criteria": [
+            { "id": "mean", "label": "平均値", "stat": "mean", "unit": "mm", "tolerance": { "min": -15, "max": 40 }, "note": "記載例では上限40mm・下限-15mmの非対称" },
+            { "id": "max", "label": "最大値(差)", "stat": "max", "unit": "mm", "tolerance": { "max": 90 } },
+            { "id": "min", "label": "最小値(差)", "stat": "min", "unit": "mm", "tolerance": { "min": -90 } },
+            { "id": "density", "label": "データ数", "stat": "density", "unit": "点/m2", "tolerance": { "min": 1 } },
+            { "id": "outlier", "label": "棄却点数", "stat": "outlierRatio", "unit": "%", "tolerance": { "max": 0.3 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nomen-seikei",
+      "name": "法面整形工",
+      "measure": "elevation",
+      "toleranceM": 0.08,
+      "source": "要領 別紙１ 面管理編（適用工種に法面整形工の記載あり）。規格値は道路土工 法面の値を暫定流用。要確認。",
+      "parts": [
+        {
+          "id": "slope",
+          "name": "法面",
+          "slope": "steep",
+          "toleranceM": 0.08,
+          "individualToleranceM": 0.19,
+          "criteria": [
+            { "id": "mean", "label": "平均値", "stat": "mean", "unit": "mm", "tolerance": { "min": -80, "max": 80 } },
+            { "id": "max", "label": "最大値(差)", "stat": "max", "unit": "mm", "tolerance": { "max": 190 } },
+            { "id": "min", "label": "最小値(差)", "stat": "min", "unit": "mm", "tolerance": { "min": -190 } },
+            { "id": "density", "label": "データ数", "stat": "density", "unit": "点/m2", "tolerance": { "min": 1 } },
+            { "id": "outlier", "label": "棄却点数", "stat": "outlierRatio", "unit": "%", "tolerance": { "max": 0.3 } }
+          ]
+        }
+      ]
+    }
+  ]
+}
