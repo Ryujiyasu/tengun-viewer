@@ -1,0 +1,133 @@
+{
+  "format": "tengun-manifest/1",
+  "createdAt": "2026-09-18T03:51:56.745Z",
+  "generator": "tengun ptv 0.1.0",
+  "claim": {
+    "title": "【サンプル】市道○○線 道路改良工事（切土のり面）",
+    "projectNumber": "SAMPLE-2026-001",
+    "owner": "鹿児島市（サンプル）",
+    "contractor": "葉月工業株式会社（サンプル）",
+    "period": {
+      "start": "2026-04-01",
+      "end": "2026-11-30"
+    },
+    "crs": {
+      "epsg": 6670,
+      "label": "EPSG:6670（JGD2011 / 平面直角座標系 第II系）",
+      "axisOrder": "EN"
+    }
+  },
+  "assertions": {
+    "tengun.acquisition": [
+      {
+        "role": "post",
+        "file": "出来形.las",
+        "bytes": 31200227,
+        "sha256": "4d4b6e98dca1dd4701a3a870af81a89be96f7353acd6990c4d8e9d9c26784bb0",
+        "pointCount": 1200000,
+        "capturedAt": "2026-10-20",
+        "equipment": "（サンプル）UAVレーザ",
+        "software": "（サンプル）"
+      },
+      {
+        "role": "design",
+        "file": "設計.xml",
+        "bytes": 154286,
+        "sha256": "497eee4b78e6596af379373e4c0e4bae5e49caa7b3b0e9e3c1d925ed92c7f43e",
+        "pointCount": 1464,
+        "capturedAt": null,
+        "equipment": null,
+        "software": null
+      },
+      {
+        "role": "pre",
+        "file": "起工測量.las",
+        "bytes": 18720227,
+        "sha256": "a4dd3f832639102e0bf2f103ad543cad7a2ece889ef9e37031e2973c5ee6ef53",
+        "pointCount": 720000,
+        "capturedAt": "2026-04-10",
+        "equipment": "（サンプル）UAV写真測量",
+        "software": "（サンプル）"
+      }
+    ],
+    "tengun.processing": {
+      "generator": "tengun ptv 0.1.0",
+      "designSurface": "設計面（切土のり面）",
+      "triangleCount": 2760,
+      "maxDistanceM": 5,
+      "judgedClasses": [
+        2,
+        11
+      ],
+      "toleranceM": 0.05,
+      "measure": "elevation",
+      "slopeThresholdDeg": 15,
+      "specFile": "spec-values.json",
+      "specVerified": false,
+      "workType": "doro-dokou-rotai",
+      "pointCount": 1200000,
+      "evaluatedPointCount": 1194319,
+      "timings": {
+        "design": 34,
+        "read-post": 137,
+        "deviation": 824,
+        "parts": 157,
+        "read-pre": 91,
+        "sections": 133,
+        "full": 1217,
+        "light": 1137
+      }
+    },
+    "tengun.outputs": [
+      {
+        "file": "full/data/post.bin",
+        "bytes": 33600000,
+        "sha256": "3ab8f84dc350e38513ef9473964c952d1e1833de323f34d552836cc18ed85f3a",
+        "role": "post-octree"
+      },
+      {
+        "file": "full/data/pre.bin",
+        "bytes": 20160000,
+        "sha256": "664e4f39b86cc837046f020ddafd1ddf2222d6fc5f3e87b00f3ab804b0f0347c",
+        "role": "pre-octree"
+      },
+      {
+        "file": "full/data/design.bin",
+        "bytes": 50704,
+        "sha256": "299ed451564301b53483c386e8be44cd88ac08525b6b86887cec9a16f73efb78",
+        "role": "design-tin"
+      },
+      {
+        "file": "full/report/出来形合否判定総括表.csv",
+        "bytes": 1674,
+        "sha256": "f1ab506350abfd918a229de7546b7bfe31b5dccea4d613e746f6263274b0b986",
+        "role": "report"
+      },
+      {
+        "file": "full/report/report.csv",
+        "bytes": 2091,
+        "sha256": "7d2be1c22d4cf790c2fea6505eb5e81ae70cdb9eb40d9832a4c198a2a3990b15",
+        "role": "report"
+      },
+      {
+        "file": "full/report/histogram.csv",
+        "bytes": 1506,
+        "sha256": "888306a41559ba5731d303df86fd062fed407f76e99327f4d602312394495393",
+        "role": "report"
+      },
+      {
+        "file": "full/report/土量.csv",
+        "bytes": 257,
+        "sha256": "ce14259666fd410e2a8d7a215a49f144842debf80585258d32372011a4831d29",
+        "role": "report"
+      },
+      {
+        "file": "light/index.html",
+        "bytes": 26241915,
+        "sha256": "b1b3b5792e9aa1decc9c72c7ccae0abdd37166349146cf3c16f892a421a96e15",
+        "role": "light-viewer"
+      }
+    ]
+  },
+  "signature": null
+}

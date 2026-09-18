@@ -1,0 +1,59 @@
+{
+  "builtAt": "2026-09-18T03:51:56.746Z",
+  "machine": {
+    "node": "v24.10.0",
+    "platform": "darwin",
+    "arch": "x64",
+    "cpus": 12
+  },
+  "input": {
+    "postPoints": 1200000,
+    "prePoints": 720000,
+    "triangles": 2760
+  },
+  "timingsMs": {
+    "design": 34,
+    "read-post": 137,
+    "deviation": 824,
+    "parts": 157,
+    "read-pre": 91,
+    "sections": 133,
+    "full": 1217,
+    "light": 1137
+  },
+  "peakRssMB": 620,
+  "outputs": [
+    {
+      "file": "full/data/post.bin",
+      "bytes": 33600000
+    },
+    {
+      "file": "full/data/pre.bin",
+      "bytes": 20160000
+    },
+    {
+      "file": "full/data/design.bin",
+      "bytes": 50704
+    },
+    {
+      "file": "full/report/出来形合否判定総括表.csv",
+      "bytes": 1674
+    },
+    {
+      "file": "full/report/report.csv",
+      "bytes": 2091
+    },
+    {
+      "file": "full/report/histogram.csv",
+      "bytes": 1506
+    },
+    {
+      "file": "full/report/土量.csv",
+      "bytes": 257
+    },
+    {
+      "file": "light/index.html",
+      "bytes": 26241915
+    }
+  ]
+}
