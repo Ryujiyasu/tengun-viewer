@@ -22,7 +22,8 @@ export class Viewer3D {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(0xf2f4f6, 1);
+    // 画面の背景（CSS の --bg）と揃える。ずれるとキャンバスの縁が見えてしまう。
+    this.renderer.setClearColor(0xeaeef0, 1);
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();

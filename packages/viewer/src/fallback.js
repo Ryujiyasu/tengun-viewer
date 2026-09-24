@@ -99,7 +99,7 @@ export class Fallback2D {
     this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
     const ctx = this.ctx;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#f2f4f6';
+    ctx.fillStyle = '#eaeef0';
     ctx.fillRect(0, 0, w, h);
 
     const p = this.points;
