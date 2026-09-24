@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /** 公開URLで実際に動くかを確認する。ローカルで動いても本番で動くとは限らない。 */
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 import { grabCanvasRgb, contentStats } from './lib/pixels.mjs';
 import { existsSync } from 'node:fs';
 const BASE = process.argv[2] ?? 'https://ryujiyasu.github.io/tengun-viewer/';
-const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean).find((p) => existsSync(p));
+const CHROME = findChrome();
 const results = [];
 const record = (n, ok, d) => { results.push({ n, ok }); console.log(`${ok ? '✔' : '✘'} ${n}${d ? `  — ${d}` : ''}`); };
 
-const br = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
+const br = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: chromeArgs() });
 const page = await br.newPage();
 await page.setViewport({ width: 1500, height: 950 });
 const errs = [];

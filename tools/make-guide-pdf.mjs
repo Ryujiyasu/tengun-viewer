@@ -13,15 +13,13 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const SRC = join(ROOT, 'docs', '使い方.md');
 const OUT = resolve(process.argv[2] ?? join(ROOT, 'dist', '点群ビューア_使い方.pdf'));
-const CHROME = [process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-].filter(Boolean).find((p) => existsSync(p));
+const CHROME = findChrome();
 
 const esc = (s) => s.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 
@@ -199,7 +197,7 @@ const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>
 ${body}
 </body></html>`;
 
-const browser = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
+const browser = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: chromeArgs() });
 const page = await browser.newPage();
 await page.setViewport({ width: 794, height: 1123 }); // A4 相当
 await page.setContent(html, { waitUntil: 'load' });

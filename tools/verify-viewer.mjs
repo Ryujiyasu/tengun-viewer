@@ -10,6 +10,7 @@ import { createServer } from 'node:http';
 import { readFile, stat, writeFile, mkdir } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 import { grabCanvasRgb, contentStats } from './lib/pixels.mjs';
 
 const MIME = {
@@ -61,22 +62,14 @@ function record(name, ok, detail) {
 }
 
 // 検証には PC にインストール済みの Chrome をそのまま使う（対象ブラウザの実物で確かめる）
-const CHROME_CANDIDATES = [
-  process.env.CHROME_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-].filter(Boolean);
-const { existsSync } = await import('node:fs');
-const executablePath = CHROME_CANDIDATES.find((p) => existsSync(p));
+const CHROME = findChrome();
 if (!executablePath) throw new Error('検証用のブラウザが見つかりません。CHROME_PATH を指定してください。');
 console.log(`検証ブラウザ: ${executablePath}`);
 
 const browser = await puppeteer.launch({
   headless: 'new',
   executablePath,
-  args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox',
-         '--allow-file-access-from-files'],
+  args: chromeArgs(['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--allow-file-access-from-files']),
 });
 
 async function openPage(url, { shot, label, disableGl = false }) {

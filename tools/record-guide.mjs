@@ -14,11 +14,12 @@ import { join, extname, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 
 const run = promisify(execFile);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = { '.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.bin':'application/octet-stream','.csv':'text/csv','.svg':'image/svg+xml' };
-const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean).find((p) => existsSync(p));
+const CHROME = findChrome();
 
 const viewerDir = resolve(process.argv[2] ?? 'site-build/full');
 const outDir = resolve(process.argv[3] ?? 'docs/guide');
@@ -51,7 +52,7 @@ const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 const browser = await puppeteer.launch({
   headless: 'new', executablePath: CHROME,
-  args: ['--no-sandbox', `--window-size=${W},${H}`, '--hide-scrollbars', '--force-device-scale-factor=1'],
+  args: chromeArgs([`--window-size=${W},${H}`, '--hide-scrollbars', '--force-device-scale-factor=1']),
 });
 const page = await browser.newPage();
 await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });

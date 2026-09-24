@@ -177,3 +177,31 @@ tools/      サンプル生成・検証・実測・使い方動画の収録
 - BIM/CIM モデル（IFC）の表示
 - 施工中のリアルタイム進捗管理
 - ローカル HTTP サーバ同梱の実行ファイル（持ち込みが禁止されている環境で使えない）
+
+## 開発環境
+
+| 必要なもの | 用途 | 無い場合 |
+|---|---|---|
+| Node.js 20 以上 | ビルド全般（vite 7 が 20+ を要求） | 必須 |
+| Chrome または Edge | 検証・使い方動画の収録・PDF 生成 | `CHROME_PATH` で場所を指定できる |
+| ffmpeg | 使い方動画と GIF の生成のみ | 無くても他は動く |
+
+puppeteer 同梱の Chromium は落とさない（`PUPPETEER_SKIP_DOWNLOAD=true`）。
+対象ブラウザの実物で確かめたいのと、400MB 近い追加ダウンロードを避けるため。
+ブラウザの探索は `tools/lib/chrome.mjs` が macOS / Linux / Windows のいずれにも対応する。
+
+### Ubuntu で動かす場合
+
+```sh
+sudo apt-get install -y ffmpeg          # 動画を作らないなら不要
+# Node 20+（nvm を使う場合）
+nvm install 20 && nvm use 20
+
+git clone https://github.com/Ryujiyasu/tengun-viewer.git
+cd tengun-viewer
+PUPPETEER_SKIP_DOWNLOAD=true npm install
+npm run build
+npm test
+```
+
+Chrome が既に入っていれば `CHROME_PATH` の指定は不要（`/usr/bin/google-chrome` を自動で見つける）。

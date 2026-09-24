@@ -12,10 +12,11 @@ import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, extname, resolve } from 'node:path';
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 import { grabCanvasRgb, frameDistance } from './lib/pixels.mjs';
 
 const MIME = { '.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.bin':'application/octet-stream','.csv':'text/csv','.svg':'image/svg+xml' };
-const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean).find((p) => existsSync(p));
+const CHROME = findChrome();
 const root = resolve(process.argv[2] ?? 'site-build/full');
 
 const server = createServer(async (q, p) => {
@@ -34,7 +35,7 @@ const server = createServer(async (q, p) => {
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 
-const br = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
+const br = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: chromeArgs() });
 const page = await br.newPage();
 await page.setViewport({ width: 1280, height: 800 });
 const errs = [];

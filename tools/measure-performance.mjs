@@ -12,6 +12,7 @@ import { readFile, stat, writeFile } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer';
+import { findChrome, chromeArgs } from './lib/chrome.mjs';
 
 const MIME = { '.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.bin':'application/octet-stream','.csv':'text/csv','.svg':'image/svg+xml' };
 
@@ -40,12 +41,11 @@ function serve(rootDir) {
   });
 }
 
-const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'].filter(Boolean).find((p) => existsSync(p));
+const CHROME = findChrome();
 
 async function measure(url, { software }) {
-  const args = ['--no-sandbox'];
-  if (software) args.push('--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader');
+  const extra = software ? ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [];
+  const args = chromeArgs(extra);
   const browser = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args });
   const page = await browser.newPage();
   await page.setViewport({ width: 1600, height: 950 });
