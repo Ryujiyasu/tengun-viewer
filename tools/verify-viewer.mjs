@@ -62,8 +62,7 @@ function record(name, ok, detail) {
 }
 
 // 検証には PC にインストール済みの Chrome をそのまま使う（対象ブラウザの実物で確かめる）
-const CHROME = findChrome();
-if (!executablePath) throw new Error('検証用のブラウザが見つかりません。CHROME_PATH を指定してください。');
+const executablePath = findChrome();
 console.log(`検証ブラウザ: ${executablePath}`);
 
 const browser = await puppeteer.launch({
