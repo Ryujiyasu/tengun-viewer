@@ -12,3 +12,19 @@ packages/viewer/src/generated/
 fixtures/test-autzen.laz
 site-build/
 送付用/
+
+# --- 退避用の除外 ---
+.env
+.env.*
+credentials.json
+*.pem
+*.key
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+target/
+out/*.npz
+fude/2026_042153.json
+norimen-karte/
